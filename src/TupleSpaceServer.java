@@ -2,7 +2,10 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-public class TupleSpaceServer {
+
+
+class TupleSpaceServer {
+    private static final int UPDATE_INTERVAL = 10000; // 10 秒
     private final int port;
     private final Map<String, String> tupleSpace;
     private int clientCount;
@@ -11,6 +14,7 @@ public class TupleSpaceServer {
     private int getCount;
     private int putCount;
     private int errorCount;
+
     public TupleSpaceServer(int port) {
         this.port = port;
         this.tupleSpace = new ConcurrentHashMap<>();
@@ -101,5 +105,58 @@ public class TupleSpaceServer {
             }
 
     }
+    private String processRequest(String request) {
+        String command = request.substring(4, 5);
+        String key = request.substring(6);
+        String value = "";
+        if (command.equals("P")) {
+            int spaceIndex = key.indexOf(' ');
+            value = key.substring(spaceIndex + 1);
+            key = key.substring(0, spaceIndex);
+        }
 
+        String response;
+        switch (command) {
+            case "R":
+                readCount++;
+                if (tupleSpace.containsKey(key)) {
+                    value = tupleSpace.get(key);
+                    response = String.format("%03d OK (%s, %s) read", responseLength(key, value, "read"), key, value);
+                } else {
+                    errorCount++;
+                    response = String.format("%03d ERR %s does not exist", responseLength(key, "", "does not exist"), key);
+                }
+                break;
+            case "G":
+                getCount++;
+                if (tupleSpace.containsKey(key)) {
+                    value = tupleSpace.remove(key);
+                    response = String.format("%03d OK (%s, %s) removed", responseLength(key, value, "removed"), key, value);
+                } else {
+                    errorCount++;
+                    response = String.format("%03d ERR %s does not exist", responseLength(key, "", "does not exist"), key);
+                }
+                break;
+            case "P":
+                putCount++;
+                if (tupleSpace.containsKey(key)) {
+                    errorCount++;
+                    response = String.format("%03d ERR %s already exists", responseLength(key, "", "already exists"), key);
+                } else {
+                    tupleSpace.put(key, value);
+                    response = String.format("%03d OK (%s, %s) added", responseLength(key, value, "added"), key, value);
+                }
+                break;
+            default:
+                errorCount++;
+                response = String.format("%03d ERR Invalid command", 19);
+        }
+        return response;
+    }
+
+    private int responseLength(String key, String value, String action) {
+        return 4 + key.length() + value.length() + action.length();
+    }
 }
+
+
