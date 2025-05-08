@@ -2,18 +2,15 @@ import java.io.*;
 import java.net.*;
 
 class TupleSpaceClient {
-    // port
+    // 直接设定端口号
     private static final int PORT = 51234;
+    // 设定测试文件路径
+    private static final String REQUEST_FILE = "C:\\Users\\ASUS\\Downloads\\test-workload\\client_4.txt";
 
     public static void main(String[] args) {
-        if (args.length != 2) {
-            System.err.println("Usage: java TupleSpaceClient <server_host> <request_file>");
-            System.exit(1);
-        }
-        String serverHost = args[0];
-        String requestFile = args[1];
+        String serverHost = "localhost";
 
-        try (BufferedReader fileReader = new BufferedReader(new FileReader(requestFile));
+        try (BufferedReader fileReader = new BufferedReader(new FileReader(REQUEST_FILE));
              Socket socket = new Socket(serverHost, PORT);
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
