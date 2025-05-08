@@ -1,14 +1,26 @@
-
+import java.io.*;
+import java.net.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 public class TupleSpaceServer {
-    private static final int UPDATE_INTERVAL = 10000; // 10 秒
+    private final int port;
     private final Map<String, String> tupleSpace;
     private int clientCount;
     private int operationCount;
     private int readCount;
     private int getCount;
+    private int putCount;
+    private int errorCount;
     public TupleSpaceServer(int port) {
-
+        this.port = port;
+        this.tupleSpace = new ConcurrentHashMap<>();
+        this.clientCount = 0;
+        this.operationCount = 0;
+        this.readCount = 0;
+        this.getCount = 0;
+        this.putCount = 0;
+        this.errorCount = 0;
+        startSummaryPrinter();
     }
     public static void main(String[] args) {
     }
@@ -48,9 +60,46 @@ public class TupleSpaceServer {
 
 
     public void start() {
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
+            System.out.println("Server started on port " + port);
+            while (true) {
+                Socket clientSocket = serverSocket.accept();
+                clientCount++;
+                new ClientHandler(clientSocket).start();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+        private class ClientHandler extends Thread {
+            private final Socket clientSocket;
+
+            public ClientHandler(Socket socket) {
+                this.clientSocket = socket;
+            }
+
+            @Override
+            public void run() {
+                try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                     PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
+                    String inputLine;
+                    while ((inputLine = in.readLine()) != null) {
+                        operationCount++;
+                        String response = processRequest(inputLine);
+                        out.println(response);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } finally {
+                    try {
+                        clientSocket.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
 
     }
-    private class ClientHandler extends Thread {
 
-    }
 }
