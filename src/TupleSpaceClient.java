@@ -1,18 +1,20 @@
-
 import java.io.*;
 import java.net.*;
-public class TupleSpaceClient {
+
+class TupleSpaceClient {
+    // port
+    private static final int PORT = 51234;
+
     public static void main(String[] args) {
-        if (args.length != 3) {
-            System.err.println("Usage: java TupleSpaceClient <server_host> <server_port> <request_file>");
+        if (args.length != 2) {
+            System.err.println("Usage: java TupleSpaceClient <server_host> <request_file>");
             System.exit(1);
         }
         String serverHost = args[0];
-        int serverPort = Integer.parseInt(args[1]);
-        String requestFile = args[2];
+        String requestFile = args[1];
 
         try (BufferedReader fileReader = new BufferedReader(new FileReader(requestFile));
-             Socket socket = new Socket(serverHost, serverPort);
+             Socket socket = new Socket(serverHost, PORT);
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
