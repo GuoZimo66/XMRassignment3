@@ -3,10 +3,9 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+
 class TupleSpaceServer {
-    private static final int UPDATE_INTERVAL = 10000;
-    // I set this port number to a fixed value.
-    private static final int PORT = 51234;
+    private static final int UPDATE_INTERVAL = 10000; // 10 秒
     private final int port;
     private final Map<String, String> tupleSpace;
     private int clientCount;
@@ -27,20 +26,22 @@ class TupleSpaceServer {
         this.errorCount = 0;
         startSummaryPrinter();
     }
-
-    private void startSummaryPrinter() {
-        Thread summaryThread = new Thread(() -> {
-            while (true) {
-                try {
-                    Thread.sleep(UPDATE_INTERVAL);
-                    printSummary();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-        summaryThread.start();
+    public static void main(String[] args) {
     }
+        private void startSummaryPrinter() {
+            Thread summaryThread = new Thread(() -> {
+                while (true) {
+                    try {
+                        Thread.sleep(UPDATE_INTERVAL);
+                        printSummary();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+            summaryThread.start();
+        }
+
 
     private void printSummary() {
         int totalSize = 0;
@@ -61,6 +62,7 @@ class TupleSpaceServer {
                 tupleCount, avgTupleSize, avgKeySize, avgValueSize, clientCount, operationCount, readCount, getCount, putCount, errorCount);
     }
 
+
     public void start() {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Server started on port " + port);
@@ -74,91 +76,87 @@ class TupleSpaceServer {
         }
     }
 
-    private class ClientHandler extends Thread {
-        private final Socket clientSocket;
+        private class ClientHandler extends Thread {
+            private final Socket clientSocket;
 
-        public ClientHandler(Socket socket) {
-            this.clientSocket = socket;
-        }
+            public ClientHandler(Socket socket) {
+                this.clientSocket = socket;
+            }
 
-        @Override
-        public void run() {
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                 PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
-                String inputLine;
-                while ((inputLine = in.readLine()) != null) {
-                    operationCount++;
-                    String response = processRequest(inputLine);
-                    out.println(response);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                try {
-                    clientSocket.close();
+            @Override
+            public void run() {
+                try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                     PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
+                    String inputLine;
+                    while ((inputLine = in.readLine()) != null) {
+                        operationCount++;
+                        String response = processRequest(inputLine);
+                        out.println(response);
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
+                } finally {
+                    try {
+                        clientSocket.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
+
+    }
+    private String processRequest(String request) {
+        String command = request.substring(4, 5);
+        String key = request.substring(6);
+        String value = "";
+        if (command.equals("P")) {
+            int spaceIndex = key.indexOf(' ');
+            value = key.substring(spaceIndex + 1);
+            key = key.substring(0, spaceIndex);
         }
 
-        private String processRequest(String request) {
-            String command = request.substring(4, 5);
-            String key = request.substring(6);
-            String value = "";
-            if (command.equals("P")) {
-                int spaceIndex = key.indexOf(' ');
-                value = key.substring(spaceIndex + 1);
-                key = key.substring(0, spaceIndex);
-            }
-
-            String response;
-            switch (command) {
-                case "R":
-                    readCount++;
-                    if (tupleSpace.containsKey(key)) {
-                        value = tupleSpace.get(key);
-                        response = String.format("%03d OK (%s, %s) read", responseLength(key, value, "read"), key, value);
-                    } else {
-                        errorCount++;
-                        response = String.format("%03d ERR %s does not exist", responseLength(key, "", "does not exist"), key);
-                    }
-                    break;
-                case "G":
-                    getCount++;
-                    if (tupleSpace.containsKey(key)) {
-                        value = tupleSpace.remove(key);
-                        response = String.format("%03d OK (%s, %s) removed", responseLength(key, value, "removed"), key, value);
-                    } else {
-                        errorCount++;
-                        response = String.format("%03d ERR %s does not exist", responseLength(key, "", "does not exist"), key);
-                    }
-                    break;
-                case "P":
-                    putCount++;
-                    if (tupleSpace.containsKey(key)) {
-                        errorCount++;
-                        response = String.format("%03d ERR %s already exists", responseLength(key, "", "already exists"), key);
-                    } else {
-                        tupleSpace.put(key, value);
-                        response = String.format("%03d OK (%s, %s) added", responseLength(key, value, "added"), key, value);
-                    }
-                    break;
-                default:
+        String response;
+        switch (command) {
+            case "R":
+                readCount++;
+                if (tupleSpace.containsKey(key)) {
+                    value = tupleSpace.get(key);
+                    response = String.format("%03d OK (%s, %s) read", responseLength(key, value, "read"), key, value);
+                } else {
                     errorCount++;
-                    response = String.format("%03d ERR Invalid command", 19);
-            }
-            return response;
+                    response = String.format("%03d ERR %s does not exist", responseLength(key, "", "does not exist"), key);
+                }
+                break;
+            case "G":
+                getCount++;
+                if (tupleSpace.containsKey(key)) {
+                    value = tupleSpace.remove(key);
+                    response = String.format("%03d OK (%s, %s) removed", responseLength(key, value, "removed"), key, value);
+                } else {
+                    errorCount++;
+                    response = String.format("%03d ERR %s does not exist", responseLength(key, "", "does not exist"), key);
+                }
+                break;
+            case "P":
+                putCount++;
+                if (tupleSpace.containsKey(key)) {
+                    errorCount++;
+                    response = String.format("%03d ERR %s already exists", responseLength(key, "", "already exists"), key);
+                } else {
+                    tupleSpace.put(key, value);
+                    response = String.format("%03d OK (%s, %s) added", responseLength(key, value, "added"), key, value);
+                }
+                break;
+            default:
+                errorCount++;
+                response = String.format("%03d ERR Invalid command", 19);
         }
-
-        private int responseLength(String key, String value, String action) {
-            return 4 + key.length() + value.length() + action.length();
-        }
+        return response;
     }
 
-    public static void main(String[] args) {
-        // 直接使用预设的端口号
-        TupleSpaceServer server = new TupleSpaceServer(PORT);
-        server.start();
+    private int responseLength(String key, String value, String action) {
+        return 4 + key.length() + value.length() + action.length();
     }
 }
+
+
