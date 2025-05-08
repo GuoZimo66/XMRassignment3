@@ -2,8 +2,6 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-
-
 class TupleSpaceServer {
     private static final int UPDATE_INTERVAL = 10000; // 10 秒
     private final int port;
