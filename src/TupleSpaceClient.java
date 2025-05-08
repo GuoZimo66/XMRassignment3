@@ -4,7 +4,11 @@ import java.net.*;
 class TupleSpaceClient {
     // 直接设定端口号
     private static final int PORT = 51234;
-    // 设定测试文件路径
+    // If you want to run it successfully, you need to change the code for the input file path in this part!!!!!!!
+    // !!!
+    //!!！
+    //！！！
+    //！！！
     private static final String REQUEST_FILE = "C:\\Users\\ASUS\\Downloads\\test-workload\\client_4.txt";
 
     public static void main(String[] args) {
