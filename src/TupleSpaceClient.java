@@ -1,7 +1,7 @@
-
 import java.io.*;
 import java.net.*;
-public class TupleSpaceClient {
+
+class TupleSpaceClient {
     public static void main(String[] args) {
         if (args.length != 3) {
             System.err.println("Usage: java TupleSpaceClient <server_host> <server_port> <request_file>");
@@ -51,4 +51,4 @@ public class TupleSpaceClient {
             e.printStackTrace();
         }
     }
-}
+}    
